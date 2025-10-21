@@ -10,6 +10,13 @@ on:
   push:
     tags:
       - v*
+  workflow_dispatch:
+    inputs:
+      tag_name:
+        description: 'Tag name to create release for'
+        required: true
+        default: 'v1.0.0'
+        type: string
 
 jobs:
 
