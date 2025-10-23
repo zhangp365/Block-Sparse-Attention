@@ -55,7 +55,7 @@ jobs:
           # manylinux docker image, but I haven't figured out how to install CUDA on manylinux.
           os: [ubuntu-latest]
           python-version: ['3.12']
-          torch-version: ['2.5.1','2.7.1','2.8.0']
+          torch-version: ['2.8.0']
           cuda-version: ['12.8.0']
           # We need separate wheels that either uses C++11 ABI (-D_GLIBCXX_USE_CXX11_ABI) or not.
           # Pytorch wheels currently don't use it, but nvcr images have Pytorch compiled with C++11 ABI.
@@ -169,13 +169,19 @@ jobs:
 
       - name: Get the tag version
         id: extract_branch
-        run: echo ::set-output name=branch::${GITHUB_REF#refs/tags/}
+        run: |
+          if [[ "${{ github.event_name }}" == "workflow_dispatch" ]]; then
+            echo "branch=${{ github.event.inputs.tag_name }}" >> $GITHUB_OUTPUT
+          else
+            echo "branch=${GITHUB_REF#refs/tags/}" >> $GITHUB_OUTPUT
+          fi
 
       - name: Get Release with tag
         id: get_current_release
-        uses: joutvhu/get-release@v1
-        with:
-          tag_name: ${{ steps.extract_branch.outputs.branch }}
+        run: |
+          RELEASE_INFO=$(gh api repos/${{ github.repository }}/releases/tags/${{ steps.extract_branch.outputs.branch }})
+          echo "upload_url=$(echo $RELEASE_INFO | jq -r '.upload_url')" >> $GITHUB_OUTPUT
+          echo "release_id=$(echo $RELEASE_INFO | jq -r '.id')" >> $GITHUB_OUTPUT
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
