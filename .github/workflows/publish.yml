@@ -112,17 +112,28 @@ jobs:
 
       - name: Install CUDA ${{ matrix.cuda-version }}
         if: ${{ matrix.cuda-version != 'cpu' }}
-        uses: Jimver/cuda-toolkit@v0.2.28
-        id: cuda-toolkit
-        with:
-          cuda: ${{ matrix.cuda-version }}
-          linux-local-args: '["--toolkit"]'
-          # default method is "local", and we're hitting some error with caching for CUDA 11.8 and 12.1
-          # method: ${{ (matrix.cuda-version == '11.8.0' || matrix.cuda-version == '12.1.0') && 'network' || 'local' }}
-          method: 'network'
-          # We need the cuda libraries (e.g. cuSparse, cuSolver) for compiling PyTorch extensions,
-          # not just nvcc
-          # sub-packages: '["nvcc"]'
+        run: |
+          # 提取CUDA主版本号用于包名
+          CUDA_MAJOR_MINOR=$(echo "${{ matrix.cuda-version }}" | cut -d. -f1,2)
+          CUDA_PACKAGE_NAME="cuda-toolkit-${CUDA_MAJOR_MINOR}"
+          
+          # 下载并安装CUDA keyring
+          wget https://developer.download.nvidia.com/compute/cuda/repos/ubuntu2404/x86_64/cuda-keyring_1.1-1_all.deb
+          sudo dpkg -i cuda-keyring_1.1-1_all.deb
+          
+          # 清理可能存在的重复源配置
+          sudo rm -f /etc/apt/sources.list.d/archive_uri-http_developer_download_nvidia_com_compute_cuda_repos_ubuntu2404_x86_64_-noble.list
+          
+          # 更新包列表
+          sudo apt-get update
+          
+          # 安装CUDA toolkit
+          sudo apt-get install -y ${CUDA_PACKAGE_NAME}
+          
+          # 设置环境变量
+          echo "export PATH=/usr/local/cuda-${CUDA_MAJOR_MINOR}/bin\${PATH:+:\${PATH}}" >> $GITHUB_ENV
+          echo "export LD_LIBRARY_PATH=/usr/local/cuda-${CUDA_MAJOR_MINOR}/lib64\${LD_LIBRARY_PATH:+:\${LD_LIBRARY_PATH}}" >> $GITHUB_ENV
+          echo "export CUDA_HOME=/usr/local/cuda-${CUDA_MAJOR_MINOR}" >> $GITHUB_ENV
 
       - name: Install PyTorch ${{ matrix.torch-version }}+cu${{ matrix.cuda-version }}
         run: |
