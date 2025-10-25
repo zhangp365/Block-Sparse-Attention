@@ -118,7 +118,7 @@ jobs:
           CUDA_PACKAGE_NAME="cuda-toolkit-${CUDA_MAJOR_MINOR}"
           
           # 下载并安装CUDA keyring
-          wget https://developer.download.nvidia.com/compute/cuda/repos/ubuntu2404/x86_64/cuda-keyring_1.1-1_all.deb
+          wget https://developer.download.nvidia.com/compute/cuda/repos/ubuntu2204/x86_64/cuda-keyring_1.1-1_all.deb
           sudo dpkg -i cuda-keyring_1.1-1_all.deb
           
           # 清理可能存在的重复源配置
